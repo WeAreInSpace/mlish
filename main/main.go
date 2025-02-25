@@ -22,7 +22,7 @@ func main() {
 	userModal := mlish.NewModel[TestModel]()
 
 	userModal.Add(
-		[]TestModel{
+		[]*TestModel{
 			{
 				name: "Gorn",
 				age:  14,
@@ -34,12 +34,12 @@ func main() {
 		}...,
 	)
 	userModal.ForEach(
-		func(item *mlish.ForParams[TestModel]) TestModel {
-			return item.GetData()
+		func(item *mlish.ForParams[TestModel]) *TestModel {
+			return item.DataAddr()
 		},
 	)
 	userModal.Add(
-		[]TestModel{
+		[]*TestModel{
 			{
 				name: "Aran",
 				age:  26,
@@ -51,26 +51,46 @@ func main() {
 		}...,
 	)
 
-	newUserModal := mlish.And(
+	newUserModal := mlish.Migrate(
 		userModal,
-		func(item *mlish.ForParams[TestModel]) NewTestModel {
-			newTestModel := NewTestModel{}
-			newTestModel.age = item.GetData().age
-			newTestModel.name = item.GetData().name
-			newTestModel.nameInLowercase = strings.ToLower(item.GetData().name)
+		func(item *mlish.ForParams[TestModel]) *NewTestModel {
+			newTestModel := &NewTestModel{}
+			newTestModel.age = item.DataAddr().age
+			newTestModel.name = item.DataAddr().name
+			newTestModel.nameInLowercase = strings.ToLower(item.DataAddr().name)
 			return newTestModel
 		},
 	)
 	newUserModal.For(
 		func(item *mlish.ForParams[NewTestModel]) {
-			fmt.Printf("name %s, age %d, spacialName %s\n", item.GetData().name, item.GetData().age, item.GetData().nameInLowercase)
+			fmt.Printf("name %s, age %d, spacialName %s\n", item.DataAddr().name, item.DataAddr().age, item.DataAddr().nameInLowercase)
 		},
 	)
 
-	newUserModal.Filter(func(item *mlish.ForParams[NewTestModel]) NewTestModel {
-		if len(item.GetData().nameInLowercase) > 4 {
-			return item.GetData()
-		}
-		return NewTestModel{}
-	})
+	newUserModal = newUserModal.Filter(
+		func(item *mlish.ForParams[NewTestModel]) *NewTestModel {
+			if len(item.DataAddr().nameInLowercase) > 4 {
+				return item.DataAddr()
+			}
+			return nil
+		},
+	)
+	newUserModal.For(
+		func(item *mlish.ForParams[NewTestModel]) {
+			fmt.Printf("new: name %s, age %d, spacialName %s\n", item.DataAddr().name, item.DataAddr().age, item.DataAddr().nameInLowercase)
+		},
+	)
+
+	newUserModal = newUserModal.FilterByRegex(
+		"[a-z,A-Z]",
+		func(item *mlish.ForParams[NewTestModel]) string {
+			return item.DataAddr().name
+		},
+	)
+
+	newUserModal.For(
+		func(item *mlish.ForParams[NewTestModel]) {
+			fmt.Println("Regex", item.DataAddr().name)
+		},
+	)
 }
