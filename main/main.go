@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"os"
 	"strings"
 
 	"github.com/WeAreInSpace/mlish"
@@ -19,6 +19,7 @@ type NewTestModel struct {
 }
 
 func main() {
+	mlish.Settings.DebugMode = false
 	userModal := mlish.NewModel[TestModel]()
 
 	userModal.Add(
@@ -48,7 +49,18 @@ func main() {
 				name: "Thanachai",
 				age:  27,
 			},
+			{
+				name: "Thanachai",
+				age:  27,
+			},
 		}...,
+	)
+
+	userModal.Push(
+		os.Stdout,
+		func(item *mlish.ForParams[TestModel]) []byte {
+			return []byte(item.DataAddr().name + "\n")
+		},
 	)
 
 	newUserModal := mlish.Migrate(
@@ -61,11 +73,6 @@ func main() {
 			return newTestModel
 		},
 	)
-	newUserModal.For(
-		func(item *mlish.ForParams[NewTestModel]) {
-			fmt.Printf("name %s, age %d, spacialName %s\n", item.DataAddr().name, item.DataAddr().age, item.DataAddr().nameInLowercase)
-		},
-	)
 
 	newUserModal = newUserModal.Filter(
 		func(item *mlish.ForParams[NewTestModel]) *NewTestModel {
@@ -75,22 +82,18 @@ func main() {
 			return nil
 		},
 	)
-	newUserModal.For(
-		func(item *mlish.ForParams[NewTestModel]) {
-			fmt.Printf("new: name %s, age %d, spacialName %s\n", item.DataAddr().name, item.DataAddr().age, item.DataAddr().nameInLowercase)
-		},
-	)
 
 	newUserModal = newUserModal.FilterByRegex(
-		"[a-z,A-Z]",
+		`^[a-zA-Z\s]+`,
 		func(item *mlish.ForParams[NewTestModel]) string {
-			return item.DataAddr().name
+			return item.DataAddr().nameInLowercase
 		},
 	)
 
-	newUserModal.For(
-		func(item *mlish.ForParams[NewTestModel]) {
-			fmt.Println("Regex", item.DataAddr().name)
+	newUserModal.Push(
+		os.Stdout,
+		func(item *mlish.ForParams[NewTestModel]) []byte {
+			return []byte(item.Data().nameInLowercase + "\n")
 		},
 	)
 }

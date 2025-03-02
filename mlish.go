@@ -9,12 +9,12 @@ import (
 )
 
 type Setting struct {
-	debugMode bool
-	out       io.Writer
+	DebugMode bool
+	Out       io.Writer
 }
 
-var setting = &Setting{
-	out: os.Stdout,
+var Settings = &Setting{
+	Out: os.Stdout,
 }
 
 func NewModel[T any]() *Model[T] {
@@ -112,27 +112,46 @@ func (m *Model[T]) Filter(cb func(item *ForParams[T]) *T) (filteredModel *Model[
 	return
 }
 
-func (m *Model[T]) FilterByRegex(regex string, cb func(item *ForParams[T]) string) (sortedModel *Model[T]) {
-	sortedModel = m.Filter(
+func (m *Model[T]) FilterByRegex(regex string, cb func(item *ForParams[T]) string) (filteredModel *Model[T]) {
+	filteredModel = m.Filter(
 		func(item *ForParams[T]) *T {
 			key := cb(item)
 			matched, err := regexp.MatchString(regex, key)
 			if err != nil {
-				if setting.debugMode {
-					fmt.Sprintln(setting.out, err)
+				if Settings.DebugMode {
+					fmt.Sprintln(Settings.Out, err)
 					os.Exit(0)
 				} else {
 					return nil
 				}
 			}
+
 			if matched {
 				return item.DataAddr()
 			}
+
 			return nil
 		},
 	)
 
 	return
+}
+
+func (m *Model[T]) Push(w io.Writer, cb func(item *ForParams[T]) []byte) {
+	m.For(
+		func(item *ForParams[T]) {
+			data := cb(item)
+			_, err := w.Write(data)
+			if err != nil {
+				if Settings.DebugMode {
+					fmt.Sprintln(Settings.Out, err)
+					os.Exit(0)
+				} else {
+					return
+				}
+			}
+		},
+	)
 }
 
 func Migrate[oldType any, newType any](
