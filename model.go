@@ -29,6 +29,17 @@ func (m *Model[T]) Just() []*T {
 	return m.data
 }
 
+func (m *Model[T]) JustCopy() *Model[T] {
+	newModel := NewModel[T]()
+	m.For(
+		func(item *ForParams[T]) {
+			data := item.Data()
+			newModel.Add(&data)
+		},
+	)
+	return newModel
+}
+
 func (m *Model[T]) Add(data ...*T) {
 	m.mx.Lock()
 	m.data = append(m.data, data...)

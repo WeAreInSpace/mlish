@@ -8,11 +8,6 @@ func NewString() *String {
 	return new(String)
 }
 
-type Querier interface {
-	Find(s string) string
-	Replace(src []byte, repl []byte) []byte
-}
-
 type String string
 
 func (s *String) Query(pattern string) *QueryString {
