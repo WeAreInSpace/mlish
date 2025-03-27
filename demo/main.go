@@ -85,4 +85,15 @@ func main() {
 			)
 		},
 	)
+
+	userModel.For(
+		func(item *mlish.ForParams[UserModel]) {
+			fmt.Printf(
+				"Nickname: %s\nName: %s\nAge: %d\n\n",
+				item.DataAddr().nickName,
+				item.DataAddr().name,
+				item.DataAddr().age,
+			)
+		},
+	)
 }

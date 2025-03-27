@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"slices"
 	"sync"
 )
 
@@ -22,6 +23,10 @@ type Model[T any] struct {
 	data []*T
 	mx   *sync.Mutex
 	wg   *sync.WaitGroup
+}
+
+func (m *Model[T]) Just() []*T {
+	return m.data
 }
 
 func (m *Model[T]) Add(data ...*T) {
@@ -75,6 +80,17 @@ func (m *Model[T]) ForEach(
 	m.data = newData
 }
 
+func (m *Model[T]) JustForEach(
+	cb func(
+		item *ForParams[T],
+	) *T,
+) []*T {
+	m.ForEach(
+		cb,
+	)
+	return m.data
+}
+
 func (m *Model[T]) For(
 	cb func(
 		item *ForParams[T],
@@ -88,6 +104,17 @@ func (m *Model[T]) For(
 		cb(forParams)
 		m.mx.Unlock()
 	}
+}
+
+func (m *Model[T]) JustFor(
+	cb func(
+		item *ForParams[T],
+	),
+) []*T {
+	m.For(
+		cb,
+	)
+	return m.data
 }
 
 func (m *Model[T]) Filter(cb func(item *ForParams[T]) *T) (filteredModel *Model[T]) {
@@ -157,4 +184,8 @@ func Migrate[oldType any, newType any](
 		},
 	)
 	return newModel
+}
+
+func Remove[T any](model *Model[T]) {
+	model.data = slices.Delete(model.data, 0, len(model.data))
 }
